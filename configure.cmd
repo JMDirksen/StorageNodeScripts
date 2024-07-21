@@ -16,6 +16,7 @@ if exist config.yaml (
 
 set /p server-port=server-port (28967): 
 set /p console-port=console-port (14002): 
+set /p private-port=private-port (7778): 
 set /p external-address=external-address (example.com:28967): 
 set /p operator-email=operator-email (my@emailaddress.com): 
 set /p operator-wallet=operator-wallet (0xAaaBbbCccDddEeeFff): 
@@ -33,6 +34,7 @@ if not exist storagenode.exe (
 storagenode.exe setup ^
 --console.address :%console-port% ^
 --server.address :%server-port% ^
+--server.private-address 127.0.0.1:%private-port% ^
 --contact.external-address %external-address% ^
 --operator.email %operator-email% ^
 --operator.wallet %operator-wallet% ^
