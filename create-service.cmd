@@ -16,6 +16,7 @@ sc create storagenode%id% DisplayName= "Storage Node %id%" binPath= "\"%cd%\stor
 if %errorlevel% neq 0 goto exit
 sc failure storagenode%id% actions= restart/60000 reset= 300
 if %errorlevel% neq 0 goto exit
+echo storagenode%id%> servicename.txt
 
 echo Start service? (Ctrl-C to cancel)
 pause
