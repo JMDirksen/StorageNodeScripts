@@ -1,11 +1,10 @@
 @echo off
 setlocal
-cd /d %~dp0
+pushd %~dp0
 
 if exist identity\identity.key (
   echo Identity 'identity\identity.key' already exists.
-  pause
-  exit /b
+  goto exit
 )
 
 if not exist identity.exe (
@@ -25,5 +24,7 @@ identity.exe create %identity%
 identity.exe authorize %identity% %auth-token%
 move "%appdata%\Storj\Identity\%identity%" .\identity
 
+:exit
 pause
+popd
 exit /b

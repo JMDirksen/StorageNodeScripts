@@ -1,17 +1,15 @@
 @echo off
 setlocal
-cd /d %~dp0
+pushd %~dp0
 
 if not exist identity\identity.key (
   echo Identity needed, missing 'identity\identity.key'
-  pause
-  exit /b
+  goto exit
 )
 
 if exist config.yaml (
   echo Already configured, a 'config.yaml' already exists.
-  pause
-  exit /b
+  goto exit
 )
 
 set /p server-port=server-port (28967): 
@@ -46,9 +44,10 @@ storagenode.exe setup ^
 --log.output "%cd%\storagenode.log"
 if %errorlevel% neq 0 (
   echo Error during 'storagenode.exe setup', see storagenode.log for details
-  pause
-  exit /b
+  goto exit
 )
 
+:exit
 pause
+popd
 exit /b
