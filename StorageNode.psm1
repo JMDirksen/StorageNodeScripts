@@ -1,26 +1,3 @@
-<#
- .Synopsis
-  Generate an identity.
-
- .Description
-  Displays a visual representation of a calendar. This function supports multiple months
-  and lets you highlight specific date ranges or days.
-
- .Parameter AuthToken
-  Go to https://storj.dev/node/get-started/auth-token to get an authorization token.
-
- .Example
-   # Show a default display of this month.
-   Show-Calendar
-
- .Example
-   # Display a date range.
-   Show-Calendar -Start "March, 2010" -End "May, 2010"
-
- .Example
-   # Highlight a range of days.
-   Show-Calendar -HighlightDay (1..10 + 22) -HighlightDate "2008-12-25"
-#>
 function New-SNIdentity (
     [Parameter(Mandatory)] [string] $AuthToken
 ) {
@@ -32,7 +9,7 @@ function New-SNIdentity (
     Move-Item -Path "$env:APPDATA\Storj\Identity\$id" -Destination ".\identity"
 }
 
-function Update {
+function Update-StorageNode {
     $current = Get-CurrentVersion
     $suggested = Get-SuggestedReleaseVersion
     Write-Host ("Current: {0}" -f $current)
@@ -43,8 +20,7 @@ function Update {
 }
 
 function Get-Binaries {
-    $version = Get-SuggestedReleaseVersion
-    $StorageNodeBinaryURL = $version.url -replace '{os}', 'windows' -replace '{arch}', 'amd64'
+    $StorageNodeBinaryURL = (Get-SuggestedReleaseVersion).url
     Start-BitsTransfer -Source $StorageNodeBinaryURL -Destination storagenode.zip
     Expand-Archive -Path storagenode.zip -DestinationPath . -Force
     Remove-Item -Path storagenode.zip
@@ -62,12 +38,9 @@ function Get-CurrentVersion {
 
 function Get-SuggestedReleaseVersion {
     $manifest = Invoke-RestMethod https://version.storj.io
-    $manifest.processes.storagenode.suggested
+    $version = $manifest.processes.storagenode.suggested
+    $version.url = $version.url -replace '{os}', 'windows' -replace '{arch}', 'amd64'
+    $version
 }
 
-#$ErrorActionPreference = "Stop"
-#Push-Location (Split-Path $MyInvocation.MyCommand.Path)
-#Main
-#Pop-Location
-
-Export-ModuleMember -Function New-SNIdentity
+Export-ModuleMember -Function New-SNIdentity, Update-StorageNode
