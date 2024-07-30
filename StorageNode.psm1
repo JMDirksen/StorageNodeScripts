@@ -1,7 +1,10 @@
 function New-SNIdentity (
     [Parameter(Mandatory)] [string] $AuthToken
 ) {
-    if (Test-Path ".\identity\identity.cert") { Write-Host "An identity already exists." -ForegroundColor Red; Exit }
+    if (Test-Path ".\identity\identity.cert") {
+        Write-Host "An identity already exists." -ForegroundColor Red
+        Exit
+    }
     if (-not (Test-Path identity.exe)) { Get-Binaries }
     $id = "identity{0}" -f (Get-Date -Format "yyMMddHHmmss")
     Invoke-Expression ".\identity.exe create $id"
@@ -26,6 +29,57 @@ function Update-StorageNode {
             Get-Binaries
         }
     }
+}
+
+function Set-Configuration {
+    # Checks
+    if (-not (Test-Path ".\identity\identity.cert")) {
+        Write-Host "Create an identity first (New-SNIdentity)." -ForegroundColor Red
+        Exit
+    }
+    if (Test-Path "config.yaml") {
+        Write-Host "Already configured, a 'config.yaml' already exists." -ForegroundColor Red
+        Exit
+    }
+
+    # Input
+    $Email = Read-Host "E-mail address"
+    $Wallet = Read-Host "Wallet address"
+    [System.Windows.Forms.SendKeys]::SendWait("28967")
+    $ServerPort = Read-Host "Server port"
+    [System.Windows.Forms.SendKeys]::SendWait("mydomain.com:28967")
+    $ExternalAddress = Read-Host "External address"
+    [System.Windows.Forms.SendKeys]::SendWait("14002")
+    $ConsolePort = Read-Host "Console port"
+    [System.Windows.Forms.SendKeys]::SendWait("7778")
+    $PrivatePort = Read-Host "Private port"
+    [System.Windows.Forms.SendKeys]::SendWait("1.0 TB")
+    $DiskSpace = Read-Host "Disk space"
+    Write-Host
+    $Answer = Read-Host "Are above settings correct? [Y/n]"
+    if (-not ([string]::IsNullOrEmpty($Answer) -or $Answer -eq "y")) {
+        Exit
+    }
+
+    # Configure
+    if (-not (Test-Path "storagenode.exe")) { Get-Binaries }
+    $Cmd = "& .\storagenode.exe setup "
+    $Cmd += "--console.address :$ConsolePort "
+    $Cmd += "--server.address :$ServerPort "
+    $Cmd += "--server.private-address 127.0.0.1:$PrivatePort "
+    $Cmd += "--contact.external-address $ExternalAddress "
+    $Cmd += "--operator.email $Email "
+    $Cmd += "--operator.wallet $Wallet "
+    $Cmd += "--storage.allocated-disk-space `"$DiskSpace`" "
+    $Cmd += "--config-dir `"$PWD`" "
+    $Cmd += "--identity-dir `"$PWD\identity`" "
+    $Cmd += "--storage.path `"$PWD\storage`" "
+    $Cmd += "--log.level warn "
+    $Cmd += "--log.output `"$PWD\storagenode.log`" "
+    Write-Host
+    if (Test-Path .\storagenode.log) { Remove-Item .\storagenode.log }
+    Invoke-Expression $Cmd
+    if (Test-Path .\storagenode.log) { Get-Content .\storagenode.log | Write-Host -ForegroundColor Red }
 }
 
 function Get-Binaries {
@@ -64,4 +118,4 @@ function Get-ServiceName {
     $ServiceName
 }
 
-Export-ModuleMember -Function New-SNIdentity, Update-StorageNode
+Export-ModuleMember -Function New-SNIdentity, Update-StorageNode, Set-Configuration
