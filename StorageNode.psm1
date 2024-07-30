@@ -13,9 +13,18 @@ function Update-StorageNode {
     $current = Get-CurrentVersion
     $suggested = Get-SuggestedReleaseVersion
     Write-Host ("Current: {0}" -f $current)
-    Write-Host ("Suggested:  {0}" -f $suggested.version)
+    Write-Host ("Suggested: {0}" -f $suggested.version)
     if ($current -ne $suggested.version) {
-        Get-Binaries
+        $ServiceName = Get-ServiceName
+        if ($ServiceName) {
+            Stop-Service -Name $ServiceName
+            (Get-Service $ServiceName).WaitForStatus('Stopped')
+            Get-Binaries
+            Start-Service -Name $ServiceName
+        }
+        else {
+            Get-Binaries
+        }
     }
 }
 
@@ -41,6 +50,18 @@ function Get-SuggestedReleaseVersion {
     $version = $manifest.processes.storagenode.suggested
     $version.url = $version.url -replace '{os}', 'windows' -replace '{arch}', 'amd64'
     $version
+}
+
+function Get-ServiceName {
+    $ExeFullPath = (Get-ChildItem .\storagenode.exe).FullName
+    $RegServicesPath = "HKLM:\SYSTEM\CurrentControlSet\Services"
+    $ServiceName = @(
+        (Get-ChildItem $RegServicesPath -Recurse -ErrorAction SilentlyContinue | 
+        Get-ItemProperty | 
+        Where-Object { $_ -like "*$ExeFullPath*" }).PSChildName
+    )
+    if ($ServiceName.Count -ne 1) { return $false }
+    $ServiceName
 }
 
 Export-ModuleMember -Function New-SNIdentity, Update-StorageNode
