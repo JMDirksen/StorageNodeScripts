@@ -1,7 +1,9 @@
-
 /identity
+/orders
 /storage
-config.yaml
+*.db
 *.exe
 *.log
 *.zip
+config.yaml
+trust-cache.json
