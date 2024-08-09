@@ -1,4 +1,4 @@
-function New-SNIdentity (
+function New-StoragenodeIdentity (
     [Parameter(Mandatory)] [string] $AuthToken
 ) {
     if (Test-Path ".\identity\identity.cert") {
@@ -10,6 +10,21 @@ function New-SNIdentity (
     Invoke-Expression ".\identity.exe create $id"
     Invoke-Expression ".\identity.exe authorize $id $AuthToken"
     Move-Item -Path "$env:APPDATA\Storj\Identity\$id" -Destination ".\identity"
+}
+
+function New-StoragenodeService ($Name) {
+    if (-not $Name) {
+        $Name = Split-Path -Path (Get-Item -Path .) -Leaf
+    }
+    $Name = $Name -replace " ", "_"
+    if (Get-Service -Name $Name -ErrorAction SilentlyContinue) { throw "Service with name '$Name' already exists." }
+    if (Get-ServiceName) { throw "A service named '$(Get-ServiceName)' already exists for this binary (storagenode.exe)." }
+    if (-not (Test-Path .\storagenode.exe)) { Get-Binaries }
+    New-Service -Name $Name `
+        -DisplayName "Storage Node $Name" `
+        -BinaryPathName (Get-Item -Path .\storagenode.exe).FullName `
+        -DependsOn Dnscache, LanmanServer
+    & sc.exe failure $Name actions= restart/60000 reset= 300
 }
 
 function Update-StorageNode {
@@ -34,7 +49,7 @@ function Update-StorageNode {
 function Set-Configuration {
     # Checks
     if (-not (Test-Path ".\identity\identity.cert")) {
-        Write-Host "Create an identity first (New-SNIdentity)." -ForegroundColor Red
+        Write-Host "Create an identity first (New-StoragenodeIdentity)." -ForegroundColor Red
         Exit
     }
     if (Test-Path "config.yaml") {
@@ -107,7 +122,7 @@ function Get-SuggestedReleaseVersion {
 }
 
 function Get-ServiceName {
-    $ExeFullPath = (Get-ChildItem .\storagenode.exe).FullName
+    $ExeFullPath = (Get-Item .\storagenode.exe -ErrorAction SilentlyContinue).FullName
     $RegServicesPath = "HKLM:\SYSTEM\CurrentControlSet\Services"
     $ServiceName = @(
         (Get-ChildItem $RegServicesPath -Recurse -ErrorAction SilentlyContinue | 
@@ -118,4 +133,4 @@ function Get-ServiceName {
     $ServiceName
 }
 
-Export-ModuleMember -Function New-SNIdentity, Update-StorageNode, Set-Configuration
+Export-ModuleMember -Function New-StoragenodeIdentity, New-StoragenodeService, Update-StorageNode, Set-Configuration
