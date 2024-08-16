@@ -1,5 +1,6 @@
 /identity
 /orders
+/retain
 /storage
 *.db
 *.exe
